@@ -4,7 +4,12 @@ import lombok.Value;
 import lombok.SneakyThrows;
 import ru.netology.docker.sql.util.SQLQueries;
 
-import java.sql.*;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.MapHandler;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Map;
 
 public class DemoDataHelper {
 
@@ -16,53 +21,78 @@ public class DemoDataHelper {
     private static final String DB_USER = "app";
     private static final String DB_PASS = "pass";
 
+    // SQL Queries
+    private static final String SELECT_USER_BY_LOGIN = SQLQueries.getQuery("select_user_by_login");
+    private static final String SELECT_LATEST_AUTH_CODE_BY_USER_ID = SQLQueries.getQuery("select_latest_auth_code_by_user_id");
+
+    // Utility method to establish a database connection
+    @SneakyThrows
+    public static Connection getConnection() {
+        return DriverManager.getConnection(
+                DB_URL,
+                DB_USER,
+                DB_PASS
+        );
+    }
+
+    // Valid user AuthInfo class
+    @Value
+    public static class ValidAuthInfo {
+        String validLogin;
+        String validPassword;
+    }
+
+    // Method to retrieve the valid AuthInfo
+    public static ValidAuthInfo getValidAuthInfo() {
+        // Hardcoded valid user credentials
+        return new ValidAuthInfo("petya", "123qwerty");
+    }
+
+    // AuthInfo class to represent user information
     @Value
     public static class AuthInfo {
-        String userId;
+        String id;
         String login;
         String password;
         String status;
     }
 
     /**
-     * Fetches AuthInfo for a user with the specified login.
+     * Fetches AuthInfo for an existing user with the specified login.
      *
      * @param login the login of the user
      * @return AuthInfo object containing user details
      */
     @SneakyThrows
     public static AuthInfo getAuthInfoFromDb(String login) {
+
         // Establish a connection to the database
-        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-             // Create a PreparedStatement to execute the SQL query with the specified login
-             PreparedStatement pstmt = connection.prepareStatement(
-                     SQLQueries.getQuery("select_user_by_login"))) {
+        try (Connection connection = getConnection()) {
 
-            // Set the login parameter in the SQL query
-            pstmt.setString(1, login);
+            // Create a QueryRunner
+            QueryRunner runner = new QueryRunner();
 
-            // Execute the query and obtain the result set
-            try (ResultSet rs = pstmt.executeQuery()) {
-                // Check if the result set has a row
-                if (rs.next()) {
-                    // Return an AuthInfo object populated with data from the result set
-                    return new AuthInfo(
-                            rs.getString("id"),
-                            rs.getString("login"),
-                            rs.getString("password"),
-                            rs.getString("status"));
-                }
+            // Use MapHandler to get a map of column names to values
+            Map<String, Object> result = runner.query(connection, SELECT_USER_BY_LOGIN, new MapHandler(), login);
+            if (result != null) {
+                return new AuthInfo(
+                        (String) result.get("id"),
+                        (String) result.get("login"),
+                        (String) result.get("password"),
+                        (String) result.get("status")
+                );
             }
+            return null;
         }
-        // Throw an exception if no users are found with the specified login
-        throw new RuntimeException("No users found with login: " + login);
     }
 
+    // AuthCode class to represent authentication code
     @Value
     public static class AuthCode {
-        String authCodeId;
-        String userId;
+        String id;
+        String user_id;
         String code;
+        java.sql.Timestamp created;
     }
 
     /**
@@ -73,70 +103,24 @@ public class DemoDataHelper {
      */
     @SneakyThrows
     public static AuthCode getAuthCodeFromDb(String userId) {
+
         // Establish a connection to the database
-        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-             // Create a PreparedStatement to execute the SQL query with the specified userId
-             PreparedStatement pstmt = connection.prepareStatement(
-                     SQLQueries.getQuery("select_latest_auth_code"))) {
+        try (Connection connection = getConnection()) {
 
-            // Set the userId parameter in the SQL query
-            pstmt.setString(1, userId);
+            // Create a QueryRunner
+            QueryRunner runner = new QueryRunner();
 
-            // Execute the query and obtain the result set
-            try (ResultSet rs = pstmt.executeQuery()) {
-                // Check if the result set has a row
-                if (rs.next()) {
-                    // Return an AuthCode object populated with data from the result set
-                    return new AuthCode(
-                            rs.getString("id"),
-                            rs.getString("user_id"),
-                            rs.getString("code"));
-                }
+            // Use MapHandler to get a map of column names to values
+            Map<String, Object> result = runner.query(connection, SELECT_LATEST_AUTH_CODE_BY_USER_ID, new MapHandler(), userId);
+            if (result != null) {
+                return new AuthCode(
+                        (String) result.get("id"),
+                        (String) result.get("user_id"),
+                        (String) result.get("code"),
+                        (java.sql.Timestamp) result.get("created")
+                );
             }
+            return null;
         }
-        // Throw an exception if no auth codes are found for the specified userId
-        throw new RuntimeException("No auth codes found for user: " + userId);
-    }
-
-    @Value
-    public static class CardInfo {
-        String cardId;
-        String userId;
-        String cardNumber;
-        int balanceInKopecks;
-    }
-
-    /**
-     * Fetches CardInfo for the specified user.
-     *
-     * @param userId the ID of the user
-     * @return CardInfo object containing card details for the user
-     */
-    @SneakyThrows
-    public static CardInfo getCardInfoFromDb(String userId) {
-        // Establish a connection to the database
-        try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-             // Create a PreparedStatement to execute the SQL query with the specified userId
-             PreparedStatement pstmt = connection.prepareStatement(
-                     SQLQueries.getQuery("select_card_by_user_id"))) {
-
-            // Set the userId parameter in the SQL query
-            pstmt.setString(1, userId);
-
-            // Execute the query and obtain the result set
-            try (ResultSet rs = pstmt.executeQuery()) {
-                // Check if the result set has a row
-                if (rs.next()) {
-                    // Return a CardInfo object populated with data from the result set
-                    return new CardInfo(
-                            rs.getString("id"),
-                            rs.getString("user_id"),
-                            rs.getString("number"),
-                            rs.getInt("balance_in_kopecks"));
-                }
-            }
-        }
-        // Throw an exception if no cards are found for the specified userId
-        throw new RuntimeException("No cards found for user: " + userId);
     }
 }
