@@ -24,6 +24,10 @@ public class DemoDataHelper {
     // SQL Queries
     private static final String SELECT_USER_BY_LOGIN = SQLQueries.getQuery("select_user_by_login");
     private static final String SELECT_LATEST_AUTH_CODE_BY_USER_ID = SQLQueries.getQuery("select_latest_auth_code_by_user_id");
+    private static final String CLEAR_CARD_TRANSACTIONS = SQLQueries.getQuery("clear_card_transactions");
+    private static final String CLEAR_CARDS = SQLQueries.getQuery("clear_cards");
+    private static final String CLEAR_AUTH_CODES = SQLQueries.getQuery("clear_auth_codes");
+    private static final String CLEAR_USERS = SQLQueries.getQuery("clear_users");
 
     // Utility method to establish a database connection
     @SneakyThrows
@@ -33,6 +37,18 @@ public class DemoDataHelper {
                 DB_USER,
                 DB_PASS
         );
+    }
+
+    // Method to clear all tables in the database
+    @SneakyThrows
+    public static void clearDatabase() {
+        try (Connection conn = getConnection()) {
+            QueryRunner runner = new QueryRunner();
+            runner.update(conn, CLEAR_CARD_TRANSACTIONS);
+            runner.update(conn, CLEAR_CARDS);
+            runner.update(conn, CLEAR_AUTH_CODES);
+            runner.update(conn, CLEAR_USERS);
+        }
     }
 
     // Valid user AuthInfo class
