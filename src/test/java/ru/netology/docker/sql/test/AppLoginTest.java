@@ -10,10 +10,9 @@ import ru.netology.docker.sql.domain.pages.LoginPage;
 import ru.netology.docker.sql.domain.pages.VerificationPage;
 import ru.netology.docker.sql.data.DemoDataHelper;
 
-import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static ru.netology.docker.sql.data.DemoDataHelper.clearDatabase;
-import static ru.netology.docker.sql.data.DemoDataHelper.getConnection;
 
 public class AppLoginTest {
 
@@ -31,12 +30,8 @@ public class AppLoginTest {
 
     // Method to clear and close the database after all tests
     @AfterAll
-    @SneakyThrows
     public static void tearDown() {
         clearDatabase();
-        if (getConnection() != null && !getConnection().isClosed()) {
-            getConnection().close(); // Close the database connection
-        }
     }
 
 
@@ -48,12 +43,12 @@ public class AppLoginTest {
         LoginPage loginPage = new LoginPage();
         VerificationPage verificationPage = loginPage.validLogin(validLogin, validPassword);
 
-        // Wait until the verification page is visible
-        $("[data-test-id='code'] input").shouldBe(visible);
+        // Use the method from VerificationPage to check visibility of the code input
+        verificationPage.verifyCodeInputIsVisible();
 
         // Fetch the auth code from the database
         DemoDataHelper.AuthCode authCode = DemoDataHelper.getAuthCodeFromDb(user.getId());
-        assert authCode != null;
+        assertNotNull(authCode, "Auth code should not be null");
         String verificationCode = authCode.getCode();
 
         DashboardPage dashboardPage = verificationPage.validVerify(verificationCode);
