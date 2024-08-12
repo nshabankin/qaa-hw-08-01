@@ -56,12 +56,13 @@ public class DemoDataHelper {
     public static class ValidAuthInfo {
         String validLogin;
         String validPassword;
+        String invalidPassword;
     }
 
     // Method to retrieve the valid AuthInfo
     public static ValidAuthInfo getValidAuthInfo() {
         // Hardcoded valid user credentials
-        return new ValidAuthInfo("petya", "123qwerty");
+        return new ValidAuthInfo("petya", "123qwerty", "wrongpassword");
     }
 
     // AuthInfo class to represent user information

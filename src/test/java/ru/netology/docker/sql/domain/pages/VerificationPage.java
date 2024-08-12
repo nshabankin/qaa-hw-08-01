@@ -9,6 +9,7 @@ public class VerificationPage {
 
     // Define the Selenide element for the verification code input field
     private final SelenideElement verificationCodeInput = $("[data-test-id='code'] input");
+    private final SelenideElement verificationButton = $("[data-test-id='action-verify']");
 
     // Method to verify the visibility of the verification code input field
     public void verifyCodeInputIsVisible() {
@@ -17,7 +18,7 @@ public class VerificationPage {
 
     public DashboardPage validVerify(String verificationCode) {
         verificationCodeInput.setValue(verificationCode);
-        $("[data-test-id='action-verify']").click();
+        verificationButton.click();
         return new DashboardPage();
     }
 }
